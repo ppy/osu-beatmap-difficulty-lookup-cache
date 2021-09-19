@@ -2,6 +2,16 @@
 
     <PropertyGroup>
         <TargetFramework>net5.0</TargetFramework>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.10" />
+      <PackageReference Include="ppy.osu.Game" Version="2021.916.0" />
+      <PackageReference Include="ppy.osu.Game.Rulesets.Catch" Version="2021.916.0" />
+      <PackageReference Include="ppy.osu.Game.Rulesets.Mania" Version="2021.916.0" />
+      <PackageReference Include="ppy.osu.Game.Rulesets.Osu" Version="2021.916.0" />
+      <PackageReference Include="ppy.osu.Game.Rulesets.Taiko" Version="2021.916.0" />
+    </ItemGroup>
 
 </Project>
