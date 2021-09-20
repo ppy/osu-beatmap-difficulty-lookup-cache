@@ -35,12 +35,7 @@ namespace BeatmapDifficultyLookupCache.Controllers
             var beatmap = BeatmapLoader.GetBeatmap(request.BeatmapId, config);
 
             var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
-            var attributes = difficultyCalculator.Calculate(mods);
-
-            // Unsafe JSON error.
-            attributes.Mods = Array.Empty<Mod>();
-
-            return attributes;
+            return difficultyCalculator.Calculate(mods);
         }
 
         private static List<Ruleset> getRulesets()
