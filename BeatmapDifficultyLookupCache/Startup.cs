@@ -19,6 +19,7 @@ namespace BeatmapDifficultyLookupCache
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers().AddNewtonsoftJson();
+            services.AddSingleton<DifficultyCache>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
