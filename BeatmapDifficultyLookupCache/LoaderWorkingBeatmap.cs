@@ -19,15 +19,6 @@ namespace BeatmapDifficultyLookupCache
     {
         private readonly Beatmap beatmap;
 
-        /// <summary>
-        /// Constructs a new <see cref="LoaderWorkingBeatmap"/> from a .osu file.
-        /// </summary>
-        /// <param name="file">The .osu file.</param>
-        public LoaderWorkingBeatmap(string file)
-            : this(File.OpenRead(file))
-        {
-        }
-
         public LoaderWorkingBeatmap(Stream stream)
             : this(new LineBufferedReader(stream))
         {

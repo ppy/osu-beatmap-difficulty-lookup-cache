@@ -79,8 +79,8 @@ namespace BeatmapDifficultyLookupCache
         {
             var beatmapExpirationSource = beatmapExpirationSources[beatmapId] = new CancellationTokenSource();
 
-            entry.SetPriority(CacheItemPriority.Normal);
-            entry.SetAbsoluteExpiration(TimeSpan.FromHours(1));
+            entry.SetPriority(CacheItemPriority.Low);
+            entry.SetSlidingExpiration(TimeSpan.FromMinutes(1));
             entry.AddExpirationToken(new CancellationChangeToken(beatmapExpirationSource.Token));
 
             var req = new WebRequest(string.Format(config["Beatmaps:DownloadPath"], beatmapId))
@@ -88,7 +88,7 @@ namespace BeatmapDifficultyLookupCache
                 AllowInsecureRequests = true
             };
 
-            await req.PerformAsync(beatmapExpirationSource.Token);
+            await req.PerformAsync(beatmapExpirationSource.Token).ConfigureAwait(false);
 
             return new LoaderWorkingBeatmap(req.ResponseStream);
         });
