@@ -7,11 +7,11 @@ namespace BeatmapDifficultyLookupCache.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class PurgeController : Controller
+    public class CacheController : Controller
     {
         private readonly DifficultyCache cache;
 
-        public PurgeController(DifficultyCache cache)
+        public CacheController(DifficultyCache cache)
         {
             this.cache = cache;
         }
