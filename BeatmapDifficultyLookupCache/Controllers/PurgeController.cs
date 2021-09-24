@@ -2,7 +2,6 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 namespace BeatmapDifficultyLookupCache.Controllers
 {
@@ -10,12 +9,10 @@ namespace BeatmapDifficultyLookupCache.Controllers
     [Route("[controller]")]
     public class PurgeController : Controller
     {
-        private readonly IConfiguration config;
         private readonly DifficultyCache cache;
 
-        public PurgeController(IConfiguration config, DifficultyCache cache)
+        public PurgeController(DifficultyCache cache)
         {
-            this.config = config;
             this.cache = cache;
         }
 

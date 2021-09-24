@@ -23,7 +23,9 @@ namespace BeatmapDifficultyLookupCache
     {
         private static readonly List<Ruleset> available_rulesets = getRulesets();
 
-        private readonly ConcurrentDictionary<DifficultyRequest, CancellationTokenSource> cancellationSources = new ConcurrentDictionary<DifficultyRequest, CancellationTokenSource>();
+        private readonly ConcurrentDictionary<DifficultyRequest, CancellationTokenSource> requestExpirationSources = new ConcurrentDictionary<DifficultyRequest, CancellationTokenSource>();
+        private readonly ConcurrentDictionary<int, CancellationTokenSource> beatmapExpirationSources = new ConcurrentDictionary<int, CancellationTokenSource>();
+
         private readonly IConfiguration config;
         private readonly IMemoryCache cache;
 
@@ -35,14 +37,14 @@ namespace BeatmapDifficultyLookupCache
 
         public Task<DifficultyAttributes> GetDifficulty(DifficultyRequest request) => cache.GetOrCreateAsync(request, async entry =>
         {
-            var cancellationSource = cancellationSources[request] = new CancellationTokenSource();
+            var requestExpirationSource = requestExpirationSources[request] = new CancellationTokenSource();
 
-            entry.Priority = CacheItemPriority.Normal;
-            entry.AddExpirationToken(new CancellationChangeToken(cancellationSource.Token));
+            entry.SetPriority(CacheItemPriority.Normal);
+            entry.AddExpirationToken(new CancellationChangeToken(requestExpirationSource.Token));
 
             var ruleset = available_rulesets.First(r => r.RulesetInfo.ID == request.RulesetId);
             var mods = request.Mods.Select(m => m.ToMod(ruleset)).ToArray();
-            var beatmap = await getBeatmap(request.BeatmapId, cancellationSource.Token);
+            var beatmap = await getBeatmap(request.BeatmapId);
 
             var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
             return difficultyCalculator.Calculate(mods);
@@ -50,7 +52,7 @@ namespace BeatmapDifficultyLookupCache
 
         public void Purge(int? beatmapId, int? rulesetId)
         {
-            foreach (var (req, cancellationSource) in cancellationSources)
+            foreach (var (req, source) in requestExpirationSources)
             {
                 if (beatmapId != null && req.BeatmapId != beatmapId)
                     continue;
@@ -58,22 +60,35 @@ namespace BeatmapDifficultyLookupCache
                 if (rulesetId != null && req.RulesetId != rulesetId)
                     continue;
 
-                cancellationSource.Cancel();
+                source.Cancel();
+            }
+
+            if (beatmapId is int b)
+            {
+                if (beatmapExpirationSources.TryGetValue(b, out var source))
+                    source.Cancel();
+            }
+            else
+            {
+                foreach (var (_, source) in beatmapExpirationSources)
+                    source.Cancel();
             }
         }
 
-        private Task<WorkingBeatmap> getBeatmap(int beatmapId, CancellationToken token) => cache.GetOrCreateAsync<WorkingBeatmap>($"{beatmapId}.osu", async entry =>
+        private Task<WorkingBeatmap> getBeatmap(int beatmapId) => cache.GetOrCreateAsync<WorkingBeatmap>($"{beatmapId}.osu", async entry =>
         {
-            entry.Priority = CacheItemPriority.Normal;
+            var beatmapExpirationSource = beatmapExpirationSources[beatmapId] = new CancellationTokenSource();
+
+            entry.SetPriority(CacheItemPriority.Normal);
             entry.SetAbsoluteExpiration(TimeSpan.FromHours(1));
-            entry.AddExpirationToken(new CancellationChangeToken(token));
+            entry.AddExpirationToken(new CancellationChangeToken(beatmapExpirationSource.Token));
 
             var req = new WebRequest(string.Format(config["Beatmaps:DownloadPath"], beatmapId))
             {
                 AllowInsecureRequests = true
             };
 
-            await req.PerformAsync(token);
+            await req.PerformAsync(beatmapExpirationSource.Token);
 
             return new LoaderWorkingBeatmap(req.ResponseStream);
         });

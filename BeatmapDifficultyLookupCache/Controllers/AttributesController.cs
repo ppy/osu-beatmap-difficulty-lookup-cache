@@ -3,7 +3,6 @@
 
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using osu.Game.Rulesets.Difficulty;
 
 namespace BeatmapDifficultyLookupCache.Controllers
@@ -12,12 +11,10 @@ namespace BeatmapDifficultyLookupCache.Controllers
     [Route("[controller]")]
     public class AttributesController : Controller
     {
-        private readonly IConfiguration config;
         private readonly DifficultyCache cache;
 
-        public AttributesController(IConfiguration config, DifficultyCache cache)
+        public AttributesController(DifficultyCache cache)
         {
-            this.config = config;
             this.cache = cache;
         }
 

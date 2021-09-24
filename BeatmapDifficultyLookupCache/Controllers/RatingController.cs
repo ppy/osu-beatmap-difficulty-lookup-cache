@@ -3,7 +3,6 @@
 
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 namespace BeatmapDifficultyLookupCache.Controllers
 {
@@ -11,12 +10,10 @@ namespace BeatmapDifficultyLookupCache.Controllers
     [Route("[controller]")]
     public class RatingController : Controller
     {
-        private readonly IConfiguration config;
         private readonly DifficultyCache cache;
 
-        public RatingController(IConfiguration config, DifficultyCache cache)
+        public RatingController(DifficultyCache cache)
         {
-            this.config = config;
             this.cache = cache;
         }
 
