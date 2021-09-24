@@ -16,6 +16,8 @@ using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Difficulty;
+using osu.Game.Rulesets.Difficulty.Skills;
+using osu.Game.Rulesets.Mods;
 
 namespace BeatmapDifficultyLookupCache
 {
@@ -35,20 +37,26 @@ namespace BeatmapDifficultyLookupCache
             this.cache = cache;
         }
 
-        public Task<DifficultyAttributes> GetDifficulty(DifficultyRequest request) => cache.GetOrCreateAsync(request, async entry =>
+        public async Task<DifficultyAttributes> GetDifficulty(DifficultyRequest request)
         {
-            var requestExpirationSource = requestExpirationSources[request] = new CancellationTokenSource();
+            if (request.BeatmapId == 0)
+                return new DifficultyAttributes(Array.Empty<Mod>(), Array.Empty<Skill>(), -1);
 
-            entry.SetPriority(CacheItemPriority.Normal);
-            entry.AddExpirationToken(new CancellationChangeToken(requestExpirationSource.Token));
+            return await cache.GetOrCreateAsync(request, async entry =>
+            {
+                var requestExpirationSource = requestExpirationSources[request] = new CancellationTokenSource();
 
-            var ruleset = available_rulesets.First(r => r.RulesetInfo.ID == request.RulesetId);
-            var mods = request.Mods.Select(m => m.ToMod(ruleset)).ToArray();
-            var beatmap = await getBeatmap(request.BeatmapId);
+                entry.SetPriority(CacheItemPriority.Normal);
+                entry.AddExpirationToken(new CancellationChangeToken(requestExpirationSource.Token));
 
-            var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
-            return difficultyCalculator.Calculate(mods);
-        });
+                var ruleset = available_rulesets.First(r => r.RulesetInfo.ID == request.RulesetId);
+                var mods = request.Mods.Select(m => m.ToMod(ruleset)).ToArray();
+                var beatmap = await getBeatmap(request.BeatmapId).ConfigureAwait(false);
+
+                var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
+                return difficultyCalculator.Calculate(mods);
+            }).ConfigureAwait(false);
+        }
 
         public void Purge(int? beatmapId, int? rulesetId)
         {
