@@ -1,6 +1,6 @@
 # osu-beatmap-difficulty-lookup-cache
 
-A memory-based caching layer for beatmap difficulty (star rating and attribute) lookups which cannot be stored at a database level.
+A memory-based caching layer for beatmap difficulty (star rating and attribute) lookups which cannot be easily stored to a database.
 
 # Query API
 
