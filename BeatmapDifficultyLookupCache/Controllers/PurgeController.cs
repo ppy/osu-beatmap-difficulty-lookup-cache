@@ -20,7 +20,7 @@ namespace BeatmapDifficultyLookupCache.Controllers
         }
 
         [HttpDelete]
-        public void Delete([FromQuery(Name = "beatmap_id")] int beatmapId)
-            => cache.Purge(beatmapId);
+        public void Delete([FromQuery(Name = "beatmap_id")] int? beatmapId, [FromQuery(Name = "ruleset_id")] int? rulesetId)
+            => cache.Purge(beatmapId, rulesetId);
     }
 }
