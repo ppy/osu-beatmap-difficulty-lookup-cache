@@ -9,12 +9,12 @@ namespace BeatmapDifficultyLookupCache.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class DifficultyController : Controller
+    public class AttributesController : Controller
     {
         private readonly IConfiguration config;
         private readonly DifficultyCache cache;
 
-        public DifficultyController(IConfiguration config, DifficultyCache cache)
+        public AttributesController(IConfiguration config, DifficultyCache cache)
         {
             this.config = config;
             this.cache = cache;
