@@ -9,7 +9,6 @@ using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Difficulty;
-using osu.Game.Rulesets.Mods;
 
 namespace BeatmapDifficultyLookupCache
 {
@@ -27,7 +26,7 @@ namespace BeatmapDifficultyLookupCache
         public DifficultyAttributes GetDifficulty(DifficultyRequest request)
         {
             var ruleset = available_rulesets.First(r => r.RulesetInfo.ID == request.RulesetId);
-            var mods = request.Mods?.Select(m => m.ToMod(ruleset)).ToArray() ?? Array.Empty<Mod>();
+            var mods = request.Mods.Select(m => m.ToMod(ruleset)).ToArray();
             var beatmap = BeatmapLoader.GetBeatmap(request.BeatmapId, config);
 
             var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
