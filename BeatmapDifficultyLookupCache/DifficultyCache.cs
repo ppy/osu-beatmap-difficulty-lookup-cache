@@ -33,6 +33,10 @@ namespace BeatmapDifficultyLookupCache
             return difficultyCalculator.Calculate(mods);
         }
 
+        public void Purge(int beatmapId)
+        {
+        }
+
         private static List<Ruleset> getRulesets()
         {
             const string ruleset_library_prefix = "osu.Game.Rulesets";
