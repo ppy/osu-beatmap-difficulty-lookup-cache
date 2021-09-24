@@ -45,16 +45,9 @@ namespace BeatmapDifficultyLookupCache
             if (request.BeatmapId == 0)
                 return new DifficultyAttributes(Array.Empty<Mod>(), Array.Empty<Skill>(), -1);
 
-            logger.LogInformation("Retrieving difficulty... (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
-                request.BeatmapId,
-                request.RulesetId,
-                request.Mods.Select(m => m.ToString()));
-
-            logger.LogInformation("Request hash: {Hash}", request.GetHashCode());
-
             return await cache.GetOrCreateAsync(request, async entry =>
             {
-                logger.LogInformation("Cached difficulty not found, computing... (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
+                logger.LogInformation("Computing difficulty (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
                     request.BeatmapId,
                     request.RulesetId,
                     request.Mods.Select(m => m.ToString()));
@@ -75,7 +68,7 @@ namespace BeatmapDifficultyLookupCache
 
         public void Purge(int? beatmapId, int? rulesetId)
         {
-            logger.LogInformation("Purging... (beatmap: {BeatmapId}, ruleset: {RulesetId})", beatmapId, rulesetId);
+            logger.LogInformation("Purging (beatmap: {BeatmapId}, ruleset: {RulesetId})", beatmapId, rulesetId);
 
             foreach (var (req, source) in requestExpirationSources)
             {
@@ -102,11 +95,9 @@ namespace BeatmapDifficultyLookupCache
 
         private Task<WorkingBeatmap> getBeatmap(int beatmapId)
         {
-            logger.LogInformation("Retrieving beatmap... ({BeatmapId})", beatmapId);
-
             return cache.GetOrCreateAsync<WorkingBeatmap>($"{beatmapId}.osu", async entry =>
             {
-                logger.LogInformation("Cached beatmap not found, downloading... ({BeatmapId})", beatmapId);
+                logger.LogInformation("Downloading beatmap ({BeatmapId})", beatmapId);
 
                 var beatmapExpirationSource = beatmapExpirationSources[beatmapId] = new CancellationTokenSource();
 
