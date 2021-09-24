@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
@@ -30,11 +31,13 @@ namespace BeatmapDifficultyLookupCache
 
         private readonly IConfiguration config;
         private readonly IMemoryCache cache;
+        private readonly ILogger logger;
 
-        public DifficultyCache(IConfiguration config, IMemoryCache cache)
+        public DifficultyCache(IConfiguration config, IMemoryCache cache, ILogger<DifficultyCache> logger)
         {
             this.config = config;
             this.cache = cache;
+            this.logger = logger;
         }
 
         public async Task<DifficultyAttributes> GetDifficulty(DifficultyRequest request)
@@ -42,8 +45,20 @@ namespace BeatmapDifficultyLookupCache
             if (request.BeatmapId == 0)
                 return new DifficultyAttributes(Array.Empty<Mod>(), Array.Empty<Skill>(), -1);
 
+            logger.LogInformation("Retrieving difficulty... (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
+                request.BeatmapId,
+                request.RulesetId,
+                request.Mods.Select(m => m.ToString()));
+
+            logger.LogInformation("Request hash: {Hash}", request.GetHashCode());
+
             return await cache.GetOrCreateAsync(request, async entry =>
             {
+                logger.LogInformation("Cached difficulty not found, computing... (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
+                    request.BeatmapId,
+                    request.RulesetId,
+                    request.Mods.Select(m => m.ToString()));
+
                 var requestExpirationSource = requestExpirationSources[request] = new CancellationTokenSource();
 
                 entry.SetPriority(CacheItemPriority.Normal);
@@ -60,6 +75,8 @@ namespace BeatmapDifficultyLookupCache
 
         public void Purge(int? beatmapId, int? rulesetId)
         {
+            logger.LogInformation("Purging... (beatmap: {BeatmapId}, ruleset: {RulesetId})", beatmapId, rulesetId);
+
             foreach (var (req, source) in requestExpirationSources)
             {
                 if (beatmapId != null && req.BeatmapId != beatmapId)
@@ -83,23 +100,33 @@ namespace BeatmapDifficultyLookupCache
             }
         }
 
-        private Task<WorkingBeatmap> getBeatmap(int beatmapId) => cache.GetOrCreateAsync<WorkingBeatmap>($"{beatmapId}.osu", async entry =>
+        private Task<WorkingBeatmap> getBeatmap(int beatmapId)
         {
-            var beatmapExpirationSource = beatmapExpirationSources[beatmapId] = new CancellationTokenSource();
+            logger.LogInformation("Retrieving beatmap... ({BeatmapId})", beatmapId);
 
-            entry.SetPriority(CacheItemPriority.Low);
-            entry.SetSlidingExpiration(TimeSpan.FromMinutes(1));
-            entry.AddExpirationToken(new CancellationChangeToken(beatmapExpirationSource.Token));
-
-            var req = new WebRequest(string.Format(config["Beatmaps:DownloadPath"], beatmapId))
+            return cache.GetOrCreateAsync<WorkingBeatmap>($"{beatmapId}.osu", async entry =>
             {
-                AllowInsecureRequests = true
-            };
+                logger.LogInformation("Cached beatmap not found, downloading... ({BeatmapId})", beatmapId);
 
-            await req.PerformAsync(beatmapExpirationSource.Token).ConfigureAwait(false);
+                var beatmapExpirationSource = beatmapExpirationSources[beatmapId] = new CancellationTokenSource();
 
-            return new LoaderWorkingBeatmap(req.ResponseStream);
-        });
+                entry.SetPriority(CacheItemPriority.Low);
+                entry.SetSlidingExpiration(TimeSpan.FromMinutes(1));
+                entry.AddExpirationToken(new CancellationChangeToken(beatmapExpirationSource.Token));
+
+                var req = new WebRequest(string.Format(config["Beatmaps:DownloadPath"], beatmapId))
+                {
+                    AllowInsecureRequests = true
+                };
+
+                await req.PerformAsync(beatmapExpirationSource.Token).ConfigureAwait(false);
+
+                if (req.ResponseStream.Length == 0)
+                    throw new Exception($"Retrieved zero-length beatmap ({beatmapId})!");
+
+                return new LoaderWorkingBeatmap(req.ResponseStream);
+            });
+        }
 
         private static List<Ruleset> getRulesets()
         {
