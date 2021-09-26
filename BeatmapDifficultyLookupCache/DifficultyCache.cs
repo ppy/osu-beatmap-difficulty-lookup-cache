@@ -40,10 +40,12 @@ namespace BeatmapDifficultyLookupCache
             this.logger = logger;
         }
 
+        private static readonly DifficultyAttributes empty_attributes = new DifficultyAttributes(Array.Empty<Mod>(), Array.Empty<Skill>(), -1);
+
         public async Task<DifficultyAttributes> GetDifficulty(DifficultyRequest request)
         {
             if (request.BeatmapId == 0)
-                return new DifficultyAttributes(Array.Empty<Mod>(), Array.Empty<Skill>(), -1);
+                return empty_attributes;
 
             return await cache.GetOrCreateAsync(request, async entry =>
             {
@@ -57,12 +59,21 @@ namespace BeatmapDifficultyLookupCache
                 entry.SetPriority(CacheItemPriority.Normal);
                 entry.AddExpirationToken(new CancellationChangeToken(requestExpirationSource.Token));
 
-                var ruleset = available_rulesets.First(r => r.RulesetInfo.ID == request.RulesetId);
-                var mods = request.Mods.Select(m => m.ToMod(ruleset)).ToArray();
-                var beatmap = await getBeatmap(request.BeatmapId);
+                try
+                {
+                    var ruleset = available_rulesets.First(r => r.RulesetInfo.ID == request.RulesetId);
+                    var mods = request.Mods.Select(m => m.ToMod(ruleset)).ToArray();
+                    var beatmap = await getBeatmap(request.BeatmapId);
 
-                var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
-                return difficultyCalculator.Calculate(mods);
+                    var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
+                    return difficultyCalculator.Calculate(mods);
+                }
+                catch (Exception e)
+                {
+                    entry.SetSlidingExpiration(TimeSpan.FromDays(1));
+                    logger.LogWarning($"Request failed with \"{e.Message}\"");
+                    return empty_attributes;
+                }
             });
         }
 
