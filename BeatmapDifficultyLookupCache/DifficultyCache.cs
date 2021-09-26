@@ -59,11 +59,11 @@ namespace BeatmapDifficultyLookupCache
 
                 var ruleset = available_rulesets.First(r => r.RulesetInfo.ID == request.RulesetId);
                 var mods = request.Mods.Select(m => m.ToMod(ruleset)).ToArray();
-                var beatmap = await getBeatmap(request.BeatmapId).ConfigureAwait(false);
+                var beatmap = await getBeatmap(request.BeatmapId);
 
                 var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
                 return difficultyCalculator.Calculate(mods);
-            }).ConfigureAwait(false);
+            });
         }
 
         public void Purge(int? beatmapId, int? rulesetId)
@@ -110,7 +110,7 @@ namespace BeatmapDifficultyLookupCache
                     AllowInsecureRequests = true
                 };
 
-                await req.PerformAsync(beatmapExpirationSource.Token).ConfigureAwait(false);
+                await req.PerformAsync(beatmapExpirationSource.Token);
 
                 if (req.ResponseStream.Length == 0)
                     throw new Exception($"Retrieved zero-length beatmap ({beatmapId})!");

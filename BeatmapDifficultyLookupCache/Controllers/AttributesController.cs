@@ -19,7 +19,7 @@ namespace BeatmapDifficultyLookupCache.Controllers
         }
 
         [HttpPost]
-        public async Task<DifficultyAttributes> Post([FromBody] DifficultyRequest request)
-            => await cache.GetDifficulty(request).ConfigureAwait(false);
+        public async Task<DifficultyAttributes?> Post([FromBody] DifficultyRequest request)
+            => await cache.GetDifficulty(request);
     }
 }
