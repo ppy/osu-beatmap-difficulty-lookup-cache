@@ -46,10 +46,7 @@ namespace BeatmapDifficultyLookupCache
                 {
                     attributesCache[request] = task = Task.Run(async () =>
                     {
-                        // Trim a few mods which are invalid.
-                        var apiMods = request.GetMods()
-                                             .Where(m => !string.IsNullOrWhiteSpace(m.Acronym) && m.Acronym.ToUpperInvariant() != "SCOREV2")
-                                             .ToArray();
+                        var apiMods = request.GetMods();
 
                         logger.LogInformation("Computing difficulty (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
                             request.BeatmapId,
