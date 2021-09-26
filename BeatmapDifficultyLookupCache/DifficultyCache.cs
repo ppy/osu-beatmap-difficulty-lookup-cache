@@ -80,14 +80,17 @@ namespace BeatmapDifficultyLookupCache
             return task;
         }
 
-        public void Purge(int? beatmapId, int? rulesetId)
+        public void Purge(int beatmapId)
         {
-            logger.LogInformation("Purging (beatmap: {BeatmapId}, ruleset: {RulesetId})", beatmapId, rulesetId);
+            logger.LogInformation("Purging (beatmap: {BeatmapId})", beatmapId);
 
             lock (attributesCache)
             {
                 foreach (var req in attributesCache.Keys.ToArray())
-                    attributesCache.Remove(req);
+                {
+                    if (req.BeatmapId == beatmapId)
+                        attributesCache.Remove(req);
+                }
             }
         }
 
