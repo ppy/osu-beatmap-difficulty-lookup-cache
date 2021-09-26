@@ -5,8 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using osu.Game.Online.API;
-using osu.Game.Utils;
 
 namespace BeatmapDifficultyLookupCache
 {
@@ -19,16 +19,16 @@ namespace BeatmapDifficultyLookupCache
         public int RulesetId { get; init; }
 
         [JsonProperty("mods")]
-        public APIMod[] Mods { get; init; } = Array.Empty<APIMod>();
+        public JArray? Mods { get; init; }
 
-        private IEnumerable<APIMod> getOrderedMods => Mods.OrderBy(m => m.Acronym);
+        public IEnumerable<APIMod> GetMods() => Mods?.ToObject<APIMod[]>()?.OrderBy(m => m.Acronym).ToArray() ?? Array.Empty<APIMod>();
 
         public bool Equals(DifficultyRequest? other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
 
-            return BeatmapId == other.BeatmapId && RulesetId == other.RulesetId && getOrderedMods.SequenceEqual(other.getOrderedMods);
+            return BeatmapId == other.BeatmapId && RulesetId == other.RulesetId && new JTokenEqualityComparer().Equals(Mods!, other.Mods!);
         }
 
         public override bool Equals(object? obj)
@@ -40,18 +40,7 @@ namespace BeatmapDifficultyLookupCache
 
             hashCode.Add(BeatmapId);
             hashCode.Add(RulesetId);
-
-            // Todo: Temporary (APIMod doesn't implement GetHashCode()).
-            foreach (var m in getOrderedMods)
-            {
-                hashCode.Add(m.Acronym);
-
-                foreach (var (key, value) in m.Settings)
-                {
-                    hashCode.Add(key);
-                    hashCode.Add(ModUtils.GetSettingUnderlyingValue(value));
-                }
-            }
+            hashCode.Add(new JTokenEqualityComparer().GetHashCode(Mods!));
 
             return hashCode.ToHashCode();
         }
