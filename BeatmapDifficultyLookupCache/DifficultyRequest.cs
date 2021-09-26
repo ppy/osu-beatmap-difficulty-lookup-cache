@@ -33,8 +33,14 @@ namespace BeatmapDifficultyLookupCache
                 if (string.IsNullOrWhiteSpace(acronym))
                     return true;
 
-                if (acronym is "SCOREV2" or "CINEMA" or "RELAX" or "AUTO")
-                    return true;
+                switch (acronym)
+                {
+                    case "SCOREV2":
+                    case "CINEMA":
+                    case "RELAX":
+                    case "AUTO":
+                        return true;
+                }
 
                 return false;
             });
