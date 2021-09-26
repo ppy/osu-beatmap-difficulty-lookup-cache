@@ -81,9 +81,9 @@ namespace BeatmapDifficultyLookupCache
                 source.Cancel();
             }
 
-            if (beatmapId is int b)
+            if (beatmapId.HasValue)
             {
-                if (beatmapExpirationSources.TryGetValue(b, out var source))
+                if (beatmapExpirationSources.TryGetValue(beatmapId.Value, out var source))
                     source.Cancel();
             }
             else
