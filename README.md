@@ -32,7 +32,5 @@ curl -X POST -H "Content-Type: application/json" \
 
 ```
 curl -X DELETE \
-    http://localhost:80/cache?beatmap_id=129891&ruleset_id=0
+    http://localhost:80/cache?beatmap_id=129891
 ```
-
-`beatmap_id` and `ruleset_id` are optional.
