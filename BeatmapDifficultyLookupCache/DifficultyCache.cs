@@ -178,8 +178,6 @@ namespace BeatmapDifficultyLookupCache
                 {
                     case "EZ": return 1 << 1;
 
-                    case "HD": return 1 << 3;
-
                     case "HR": return 1 << 4;
 
                     case "NC": return 1 << 6;
