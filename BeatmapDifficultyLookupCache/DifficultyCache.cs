@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Extensions.Configuration;
@@ -38,6 +39,8 @@ namespace BeatmapDifficultyLookupCache
             this.logger = logger;
         }
 
+        private static long totalLookups = 0;
+
         public async Task<DifficultyAttributes> GetDifficulty(DifficultyRequest request)
         {
             if (request.BeatmapId == 0)
@@ -45,26 +48,30 @@ namespace BeatmapDifficultyLookupCache
 
             if (useDatabase)
             {
+                int mods = getModBitwise(request.GetMods());
+                double starRating;
+
                 using (var conn = await Database.GetDatabaseConnection())
                 {
-                    int mods = getModBitwise(request.GetMods());
-
-                    var starRating = await conn.QueryFirstOrDefaultAsync<double>("SELECT diff_unified FROM osu_beatmap_difficulty where beatmap_id = @BeatmapId AND mode = @RulesetId AND mods = @mods",
+                    starRating = await conn.QueryFirstOrDefaultAsync<double>("SELECT diff_unified FROM osu_beatmap_difficulty where beatmap_id = @BeatmapId AND mode = @RulesetId AND mods = @mods",
                         new
                         {
                             request.BeatmapId,
                             request.RulesetId,
                             mods,
                         });
+                }
 
+                if (Interlocked.Increment(ref totalLookups) % 1000 == 0)
+                {
                     logger.LogInformation("lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods}) : {starRating}",
                         request.BeatmapId,
                         request.RulesetId,
                         mods,
                         starRating);
-
-                    return new DifficultyAttributes { StarRating = starRating };
                 }
+
+                return new DifficultyAttributes { StarRating = starRating };
             }
 
             Task<DifficultyAttributes>? task;
