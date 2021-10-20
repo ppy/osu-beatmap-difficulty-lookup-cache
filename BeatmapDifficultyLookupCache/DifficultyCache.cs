@@ -32,11 +32,12 @@ namespace BeatmapDifficultyLookupCache
 
         private readonly bool useDatabase;
 
-        public DifficultyCache(IConfiguration config, ILogger<DifficultyCache> logger, bool useDatabase = true)
+        public DifficultyCache(IConfiguration config, ILogger<DifficultyCache> logger)
         {
-            this.useDatabase = useDatabase;
             this.config = config;
             this.logger = logger;
+
+            useDatabase = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USE_DATABASE_LOOKUPS"));
         }
 
         private static long totalLookups = 0;
