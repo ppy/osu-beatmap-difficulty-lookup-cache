@@ -45,7 +45,7 @@ namespace BeatmapDifficultyLookupCache
 
             if (useDatabase)
             {
-                using (var conn = Database.GetDatabaseConnection())
+                using (var conn = await Database.GetDatabaseConnection())
                 {
                     int mods = getModBitwise(request.GetMods());
 

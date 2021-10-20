@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using MySqlConnector;
 
 namespace BeatmapDifficultyLookupCache
@@ -8,20 +9,13 @@ namespace BeatmapDifficultyLookupCache
         /// <summary>
         /// Retrieve a database connection.
         /// </summary>
-        public static MySqlConnection GetDatabaseConnection()
+        public static async Task<MySqlConnection> GetDatabaseConnection()
         {
             string host = (Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost");
             string user = (Environment.GetEnvironmentVariable("DB_USER") ?? "root");
 
             var connection = new MySqlConnection($"Server={host};Database=osu;User ID={user};ConnectionTimeout=5;ConnectionReset=false;Pooling=true;");
-            connection.Open();
-
-            // TODO: remove this when we have set a saner time zone server-side.
-            using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = "SET time_zone = '+00:00';";
-                cmd.ExecuteNonQuery();
-            }
+            await connection.OpenAsync();
 
             return connection;
         }
