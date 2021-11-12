@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
+using osu.Game.Beatmaps.Legacy;
 using osu.Game.Online.API;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Difficulty;
@@ -49,7 +50,7 @@ namespace BeatmapDifficultyLookupCache
 
             if (useDatabase)
             {
-                int mods = getModBitwise(request.GetMods());
+                int mods = getModBitwise(request.RulesetId, request.GetMods());
                 double starRating;
 
                 using (var conn = await Database.GetDatabaseConnection())
@@ -171,7 +172,7 @@ namespace BeatmapDifficultyLookupCache
             return rulesetsToProcess;
         }
 
-        private static int getModBitwise(List<APIMod> mods)
+        private static int getModBitwise(int rulesetId, List<APIMod> mods)
         {
             int val = 0;
 
@@ -205,6 +206,8 @@ namespace BeatmapDifficultyLookupCache
                     case "8K": return 1 << 19;
 
                     case "9K": return 1 << 24;
+
+                    case "FL" when rulesetId == 0: return (int)LegacyMods.Flashlight;
                 }
 
                 return 0;
