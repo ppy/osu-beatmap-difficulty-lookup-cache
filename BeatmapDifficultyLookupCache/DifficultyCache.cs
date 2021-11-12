@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
+using osu.Game.Beatmaps.Legacy;
 using osu.Game.Online.API;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Difficulty;
@@ -40,7 +41,7 @@ namespace BeatmapDifficultyLookupCache
             useDatabase = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USE_DATABASE_LOOKUPS"));
         }
 
-        private static long totalLookups = 0;
+        private static long totalLookups;
 
         public async Task<DifficultyAttributes> GetDifficulty(DifficultyRequest request)
         {
@@ -49,7 +50,7 @@ namespace BeatmapDifficultyLookupCache
 
             if (useDatabase)
             {
-                int mods = getModBitwise(request.GetMods());
+                int mods = getModBitwise(request.RulesetId, request.GetMods());
                 double starRating;
 
                 using (var conn = await Database.GetDatabaseConnection())
@@ -65,7 +66,7 @@ namespace BeatmapDifficultyLookupCache
 
                 if (Interlocked.Increment(ref totalLookups) % 1000 == 0)
                 {
-                    logger.LogInformation("lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods}) : {starRating}",
+                    logger.LogInformation("lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods}) : {StarRating}",
                         request.BeatmapId,
                         request.RulesetId,
                         mods,
@@ -171,40 +172,42 @@ namespace BeatmapDifficultyLookupCache
             return rulesetsToProcess;
         }
 
-        private static int getModBitwise(List<APIMod> mods)
+        private static int getModBitwise(int rulesetId, List<APIMod> mods)
         {
             int val = 0;
 
             foreach (var mod in mods)
-                val |= getBitwise(mod);
+                val |= (int)getLegacyMod(mod);
 
             return val;
 
-            int getBitwise(APIMod mod)
+            LegacyMods getLegacyMod(APIMod mod)
             {
                 switch (mod.Acronym)
                 {
-                    case "EZ": return 1 << 1;
+                    case "EZ": return LegacyMods.Easy;
 
-                    case "HR": return 1 << 4;
+                    case "HR": return LegacyMods.HardRock;
 
-                    case "NC": return 1 << 6;
+                    case "NC": return LegacyMods.DoubleTime;
 
-                    case "DT": return 1 << 6;
+                    case "DT": return LegacyMods.DoubleTime;
 
-                    case "HT": return 1 << 8;
+                    case "HT": return LegacyMods.HalfTime;
 
-                    case "4K": return 1 << 15;
+                    case "4K": return LegacyMods.Key4;
 
-                    case "5K": return 1 << 16;
+                    case "5K": return LegacyMods.Key5;
 
-                    case "6K": return 1 << 17;
+                    case "6K": return LegacyMods.Key6;
 
-                    case "7K": return 1 << 18;
+                    case "7K": return LegacyMods.Key7;
 
-                    case "8K": return 1 << 19;
+                    case "8K": return LegacyMods.Key8;
 
-                    case "9K": return 1 << 24;
+                    case "9K": return LegacyMods.Key9;
+
+                    case "FL" when rulesetId == 0: return LegacyMods.Flashlight;
                 }
 
                 return 0;
