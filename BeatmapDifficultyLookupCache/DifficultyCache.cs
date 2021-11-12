@@ -40,7 +40,7 @@ namespace BeatmapDifficultyLookupCache
             useDatabase = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USE_DATABASE_LOOKUPS"));
         }
 
-        private static long totalLookups = 0;
+        private static long totalLookups;
 
         public async Task<DifficultyAttributes> GetDifficulty(DifficultyRequest request)
         {
@@ -65,7 +65,7 @@ namespace BeatmapDifficultyLookupCache
 
                 if (Interlocked.Increment(ref totalLookups) % 1000 == 0)
                 {
-                    logger.LogInformation("lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods}) : {starRating}",
+                    logger.LogInformation("lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods}) : {StarRating}",
                         request.BeatmapId,
                         request.RulesetId,
                         mods,
