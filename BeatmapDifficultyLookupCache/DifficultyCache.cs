@@ -177,37 +177,37 @@ namespace BeatmapDifficultyLookupCache
             int val = 0;
 
             foreach (var mod in mods)
-                val |= getBitwise(mod);
+                val |= (int)getLegacyMod(mod);
 
             return val;
 
-            int getBitwise(APIMod mod)
+            LegacyMods getLegacyMod(APIMod mod)
             {
                 switch (mod.Acronym)
                 {
-                    case "EZ": return 1 << 1;
+                    case "EZ": return LegacyMods.Easy;
 
-                    case "HR": return 1 << 4;
+                    case "HR": return LegacyMods.HardRock;
 
-                    case "NC": return 1 << 6;
+                    case "NC": return LegacyMods.DoubleTime;
 
-                    case "DT": return 1 << 6;
+                    case "DT": return LegacyMods.DoubleTime;
 
-                    case "HT": return 1 << 8;
+                    case "HT": return LegacyMods.HalfTime;
 
-                    case "4K": return 1 << 15;
+                    case "4K": return LegacyMods.Key4;
 
-                    case "5K": return 1 << 16;
+                    case "5K": return LegacyMods.Key5;
 
-                    case "6K": return 1 << 17;
+                    case "6K": return LegacyMods.Key6;
 
-                    case "7K": return 1 << 18;
+                    case "7K": return LegacyMods.Key7;
 
-                    case "8K": return 1 << 19;
+                    case "8K": return LegacyMods.Key8;
 
-                    case "9K": return 1 << 24;
+                    case "9K": return LegacyMods.Key9;
 
-                    case "FL" when rulesetId == 0: return (int)LegacyMods.Flashlight;
+                    case "FL" when rulesetId == 0: return LegacyMods.Flashlight;
                 }
 
                 return 0;
