@@ -17,7 +17,6 @@ using osu.Game.Beatmaps.Legacy;
 using osu.Game.Online.API;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Difficulty;
-using osu.Game.Rulesets.Difficulty.Skills;
 using osu.Game.Rulesets.Mods;
 
 namespace BeatmapDifficultyLookupCache
@@ -25,7 +24,7 @@ namespace BeatmapDifficultyLookupCache
     public class DifficultyCache
     {
         private static readonly List<Ruleset> available_rulesets = getRulesets();
-        private static readonly DifficultyAttributes empty_attributes = new DifficultyAttributes(Array.Empty<Mod>(), Array.Empty<Skill>(), -1);
+        private static readonly DifficultyAttributes empty_attributes = new DifficultyAttributes(Array.Empty<Mod>(), -1);
 
         private readonly Dictionary<DifficultyRequest, Task<DifficultyAttributes>> attributesCache = new Dictionary<DifficultyRequest, Task<DifficultyAttributes>>();
         private readonly IConfiguration config;
@@ -93,7 +92,7 @@ namespace BeatmapDifficultyLookupCache
 
                         try
                         {
-                            var ruleset = available_rulesets.First(r => r.RulesetInfo.ID == request.RulesetId);
+                            var ruleset = available_rulesets.First(r => r.RulesetInfo.OnlineID == request.RulesetId);
                             var mods = apiMods.Select(m => m.ToMod(ruleset)).ToArray();
                             var beatmap = await getBeatmap(request.BeatmapId);
 
@@ -101,7 +100,6 @@ namespace BeatmapDifficultyLookupCache
                             var attributes = difficultyCalculator.Calculate(mods);
 
                             // Trim a few members which we don't consume and only take up RAM.
-                            attributes.Skills = Array.Empty<Skill>();
                             attributes.Mods = Array.Empty<Mod>();
 
                             return attributes;
