@@ -35,7 +35,7 @@ namespace BeatmapDifficultyLookupCache
         {
             this.beatmap = beatmap;
 
-            switch (beatmap.BeatmapInfo.RulesetID)
+            switch (beatmap.BeatmapInfo.Ruleset.OnlineID)
             {
                 case 0:
                     beatmap.BeatmapInfo.Ruleset = new OsuRuleset().RulesetInfo;
