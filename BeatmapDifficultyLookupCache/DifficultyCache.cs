@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using BeatmapDifficultyLookupCache.Models;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -16,8 +17,12 @@ using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Online.API;
 using osu.Game.Rulesets;
+using osu.Game.Rulesets.Catch.Difficulty;
 using osu.Game.Rulesets.Difficulty;
+using osu.Game.Rulesets.Mania.Difficulty;
 using osu.Game.Rulesets.Mods;
+using osu.Game.Rulesets.Osu.Difficulty;
+using osu.Game.Rulesets.Taiko.Difficulty;
 
 namespace BeatmapDifficultyLookupCache
 {
@@ -50,29 +55,55 @@ namespace BeatmapDifficultyLookupCache
             if (useDatabase)
             {
                 int mods = getModBitwise(request.RulesetId, request.GetMods());
-                double starRating;
-
-                using (var conn = await Database.GetDatabaseConnection())
-                {
-                    starRating = await conn.QueryFirstOrDefaultAsync<double>("SELECT diff_unified FROM osu_beatmap_difficulty where beatmap_id = @BeatmapId AND mode = @RulesetId AND mods = @mods",
-                        new
-                        {
-                            request.BeatmapId,
-                            request.RulesetId,
-                            mods,
-                        });
-                }
 
                 if (Interlocked.Increment(ref totalLookups) % 1000 == 0)
                 {
-                    logger.LogInformation("lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods}) : {StarRating}",
+                    logger.LogInformation("lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
                         request.BeatmapId,
                         request.RulesetId,
-                        mods,
-                        starRating);
+                        mods);
                 }
 
-                return new DifficultyAttributes { StarRating = starRating };
+                beatmap_difficulty_attribute[] rawDifficultyAttributes;
+
+                using (var conn = await Database.GetDatabaseConnection())
+                {
+                    rawDifficultyAttributes = conn.Query<beatmap_difficulty_attribute>(
+                        "SELECT * FROM osu_beatmap_difficulty_attribs WHERE beatmap_id = @BeatmapId AND mode = @RulesetId AND mods = @ModValue", new
+                        {
+                            BeatmapId = request.BeatmapId,
+                            RulesetId = request.RulesetId,
+                            ModValue = mods
+                        }).ToArray();
+                }
+
+                DifficultyAttributes attributes;
+
+                switch (request.RulesetId)
+                {
+                    case 0:
+                        attributes = new OsuDifficultyAttributes();
+                        break;
+
+                    case 1:
+                        attributes = new TaikoDifficultyAttributes();
+                        break;
+
+                    case 2:
+                        attributes = new CatchDifficultyAttributes();
+                        break;
+
+                    case 3:
+                        attributes = new ManiaDifficultyAttributes();
+                        break;
+
+                    default:
+                        throw new InvalidOperationException($"Invalid ruleset: {request.RulesetId}");
+                }
+
+                attributes.FromDatabaseAttributes(rawDifficultyAttributes.ToDictionary(a => (int)a.attrib_id, e => (double)e.value));
+
+                return attributes;
             }
 
             Task<DifficultyAttributes>? task;
