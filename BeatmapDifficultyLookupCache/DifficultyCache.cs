@@ -140,7 +140,7 @@ namespace BeatmapDifficultyLookupCache
 
             using (var conn = await Database.GetDatabaseConnection())
             {
-                return conn.QuerySingle<float>("SELECT diff_unified from osu.osu_beatmap_difficulty WHERE beatmap_id = @BeatmapId AND mode = @RulesetId and mods = @ModValue", new
+                return conn.QueryFirstOrDefault<float>("SELECT diff_unified from osu.osu_beatmap_difficulty WHERE beatmap_id = @BeatmapId AND mode = @RulesetId and mods = @ModValue", new
                 {
                     BeatmapId = request.BeatmapId,
                     RulesetId = request.RulesetId,
