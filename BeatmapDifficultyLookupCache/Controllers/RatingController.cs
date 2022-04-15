@@ -18,7 +18,6 @@ namespace BeatmapDifficultyLookupCache.Controllers
         }
 
         [HttpPost]
-        public async Task<double> Post([FromBody] DifficultyRequest request) =>
-            (await cache.GetDifficulty(request)).StarRating;
+        public Task<double> Post([FromBody] DifficultyRequest request) => cache.GetDifficultyRating(request);
     }
 }

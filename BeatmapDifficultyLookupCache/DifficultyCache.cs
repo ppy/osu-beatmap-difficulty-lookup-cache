@@ -47,7 +47,18 @@ namespace BeatmapDifficultyLookupCache
 
         private static long totalLookups;
 
-        public async Task<DifficultyAttributes> GetDifficulty(DifficultyRequest request)
+        public async Task<double> GetDifficultyRating(DifficultyRequest request)
+        {
+            if (request.BeatmapId == 0)
+                return 0;
+
+            if (useDatabase)
+                return await getDatabasedDifficulty(request);
+
+            return (await computeAttributes(request)).StarRating;
+        }
+
+        public async Task<DifficultyAttributes> GetAttributes(DifficultyRequest request)
         {
             if (request.BeatmapId == 0)
                 return empty_attributes;
@@ -62,8 +73,7 @@ namespace BeatmapDifficultyLookupCache
                 {
                     // Databased attribute retrieval can fail if the database doesn't contain all attributes for a given beatmap.
                     // If such a case occurs, fall back to providing just the star rating rather than outputting exceptions.
-                    float starRating = await getDatabasedDifficulty(request);
-                    return new DifficultyAttributes { StarRating = starRating };
+                    return new DifficultyAttributes { StarRating = await GetDifficultyRating(request) };
                 }
             }
 
