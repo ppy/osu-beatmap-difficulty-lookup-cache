@@ -84,14 +84,6 @@ namespace BeatmapDifficultyLookupCache
         {
             int mods = getModBitwise(request.RulesetId, request.GetMods());
 
-            if (Interlocked.Increment(ref totalLookups) % 1000 == 0)
-            {
-                logger.LogInformation("lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
-                    request.BeatmapId,
-                    request.RulesetId,
-                    mods);
-            }
-
             beatmap_difficulty_attribute[] rawDifficultyAttributes;
 
             using (var conn = await Database.GetDatabaseConnection())
@@ -137,6 +129,14 @@ namespace BeatmapDifficultyLookupCache
         private async Task<float> getDatabasedDifficulty(DifficultyRequest request)
         {
             int mods = getModBitwise(request.RulesetId, request.GetMods());
+
+            if (Interlocked.Increment(ref totalLookups) % 1000 == 0)
+            {
+                logger.LogInformation("difficulty lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
+                    request.BeatmapId,
+                    request.RulesetId,
+                    mods);
+            }
 
             using (var conn = await Database.GetDatabaseConnection())
             {
