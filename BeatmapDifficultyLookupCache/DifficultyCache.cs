@@ -54,58 +54,93 @@ namespace BeatmapDifficultyLookupCache
 
             if (useDatabase)
             {
-                int mods = getModBitwise(request.RulesetId, request.GetMods());
-
-                if (Interlocked.Increment(ref totalLookups) % 1000 == 0)
+                try
                 {
-                    logger.LogInformation("lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
-                        request.BeatmapId,
-                        request.RulesetId,
-                        mods);
+                    return await getDatabasedAttributes(request);
                 }
-
-                beatmap_difficulty_attribute[] rawDifficultyAttributes;
-
-                using (var conn = await Database.GetDatabaseConnection())
+                catch
                 {
-                    rawDifficultyAttributes = conn.Query<beatmap_difficulty_attribute>(
-                        "SELECT * FROM osu_beatmap_difficulty_attribs WHERE beatmap_id = @BeatmapId AND mode = @RulesetId AND mods = @ModValue", new
-                        {
-                            BeatmapId = request.BeatmapId,
-                            RulesetId = request.RulesetId,
-                            ModValue = mods
-                        }).ToArray();
+                    // Databased attribute retrieval can fail if the database doesn't contain all attributes for a given beatmap.
+                    // If such a case occurs, fall back to providing just the star rating rather than outputting exceptions.
+                    float starRating = await getDatabasedDifficulty(request);
+                    return new DifficultyAttributes { StarRating = starRating };
                 }
-
-                DifficultyAttributes attributes;
-
-                switch (request.RulesetId)
-                {
-                    case 0:
-                        attributes = new OsuDifficultyAttributes();
-                        break;
-
-                    case 1:
-                        attributes = new TaikoDifficultyAttributes();
-                        break;
-
-                    case 2:
-                        attributes = new CatchDifficultyAttributes();
-                        break;
-
-                    case 3:
-                        attributes = new ManiaDifficultyAttributes();
-                        break;
-
-                    default:
-                        throw new InvalidOperationException($"Invalid ruleset: {request.RulesetId}");
-                }
-
-                attributes.FromDatabaseAttributes(rawDifficultyAttributes.ToDictionary(a => (int)a.attrib_id, e => (double)e.value));
-
-                return attributes;
             }
 
+            return await computeAttributes(request);
+        }
+
+        private async Task<DifficultyAttributes> getDatabasedAttributes(DifficultyRequest request)
+        {
+            int mods = getModBitwise(request.RulesetId, request.GetMods());
+
+            if (Interlocked.Increment(ref totalLookups) % 1000 == 0)
+            {
+                logger.LogInformation("lookup for (beatmap: {BeatmapId}, ruleset: {RulesetId}, mods: {Mods})",
+                    request.BeatmapId,
+                    request.RulesetId,
+                    mods);
+            }
+
+            beatmap_difficulty_attribute[] rawDifficultyAttributes;
+
+            using (var conn = await Database.GetDatabaseConnection())
+            {
+                rawDifficultyAttributes = conn.Query<beatmap_difficulty_attribute>(
+                    "SELECT * FROM osu_beatmap_difficulty_attribs WHERE beatmap_id = @BeatmapId AND mode = @RulesetId AND mods = @ModValue", new
+                    {
+                        BeatmapId = request.BeatmapId,
+                        RulesetId = request.RulesetId,
+                        ModValue = mods
+                    }).ToArray();
+            }
+
+            DifficultyAttributes attributes;
+
+            switch (request.RulesetId)
+            {
+                case 0:
+                    attributes = new OsuDifficultyAttributes();
+                    break;
+
+                case 1:
+                    attributes = new TaikoDifficultyAttributes();
+                    break;
+
+                case 2:
+                    attributes = new CatchDifficultyAttributes();
+                    break;
+
+                case 3:
+                    attributes = new ManiaDifficultyAttributes();
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Invalid ruleset: {request.RulesetId}");
+            }
+
+            attributes.FromDatabaseAttributes(rawDifficultyAttributes.ToDictionary(a => (int)a.attrib_id, e => (double)e.value));
+
+            return attributes;
+        }
+
+        private async Task<float> getDatabasedDifficulty(DifficultyRequest request)
+        {
+            int mods = getModBitwise(request.RulesetId, request.GetMods());
+
+            using (var conn = await Database.GetDatabaseConnection())
+            {
+                return conn.QuerySingle<float>("SELECT diff_unified from osu.osu_beatmap_difficulty WHERE beatmap_id = @BeatmapId AND mode = @RulesetId and mods = @ModValue", new
+                {
+                    BeatmapId = request.BeatmapId,
+                    RulesetId = request.RulesetId,
+                    ModValue = mods
+                });
+            }
+        }
+
+        private async Task<DifficultyAttributes> computeAttributes(DifficultyRequest request)
+        {
             Task<DifficultyAttributes>? task;
 
             lock (attributesCache)
