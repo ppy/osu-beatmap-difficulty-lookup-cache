@@ -88,13 +88,13 @@ namespace BeatmapDifficultyLookupCache
 
             using (var conn = await Database.GetDatabaseConnection())
             {
-                rawDifficultyAttributes = conn.Query<beatmap_difficulty_attribute>(
+                rawDifficultyAttributes = (await conn.QueryAsync<beatmap_difficulty_attribute>(
                     "SELECT * FROM osu_beatmap_difficulty_attribs WHERE beatmap_id = @BeatmapId AND mode = @RulesetId AND mods = @ModValue", new
                     {
                         BeatmapId = request.BeatmapId,
                         RulesetId = request.RulesetId,
                         ModValue = mods
-                    }).ToArray();
+                    })).ToArray();
             }
 
             DifficultyAttributes attributes;
@@ -140,7 +140,7 @@ namespace BeatmapDifficultyLookupCache
 
             using (var conn = await Database.GetDatabaseConnection())
             {
-                return conn.QueryFirstOrDefault<float>("SELECT diff_unified from osu.osu_beatmap_difficulty WHERE beatmap_id = @BeatmapId AND mode = @RulesetId and mods = @ModValue", new
+                return await conn.QueryFirstOrDefaultAsync<float>("SELECT diff_unified from osu.osu_beatmap_difficulty WHERE beatmap_id = @BeatmapId AND mode = @RulesetId and mods = @ModValue", new
                 {
                     BeatmapId = request.BeatmapId,
                     RulesetId = request.RulesetId,
