@@ -13,6 +13,20 @@ jobs:
         name: Checkout
         uses: actions/checkout@v2
       -
+        name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            pppy/osu-beatmap-difficulty-lookup-cache
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+            type=raw,value=${{ github.ref_name }}
+          flavor: |
+            latest=false
+      -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       -
@@ -29,4 +43,5 @@ jobs:
           file: ./BeatmapDifficultyLookupCache/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: pppy/osu-beatmap-difficulty-lookup-cache:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
