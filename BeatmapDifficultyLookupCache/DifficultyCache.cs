@@ -257,7 +257,7 @@ namespace BeatmapDifficultyLookupCache
 
             LegacyMods getLegacyMod(APIMod mod)
             {
-                switch (mod.Acronym)
+                switch (mod.Acronym.ToUpperInvariant())
                 {
                     case "EZ": return LegacyMods.Easy;
 
