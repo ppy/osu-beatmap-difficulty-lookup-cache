@@ -248,12 +248,16 @@ namespace BeatmapDifficultyLookupCache
 
         private static int getModBitwise(int rulesetId, List<APIMod> mods)
         {
-            int val = 0;
+            LegacyMods val = 0;
 
             foreach (var mod in mods)
-                val |= (int)getLegacyMod(mod);
+                val |= getLegacyMod(mod);
 
-            return val;
+            // HD is only considered for the osu! ruleset when it is alongside FL.
+            if (rulesetId != 0 || !val.HasFlag(LegacyMods.Flashlight))
+                val &= ~LegacyMods.Hidden;
+
+            return (int)val;
 
             LegacyMods getLegacyMod(APIMod mod)
             {
@@ -282,6 +286,8 @@ namespace BeatmapDifficultyLookupCache
                     case "9K": return LegacyMods.Key9;
 
                     case "FL" when rulesetId == 0: return LegacyMods.Flashlight;
+
+                    case "HD" when rulesetId == 0: return LegacyMods.Hidden;
                 }
 
                 return 0;
