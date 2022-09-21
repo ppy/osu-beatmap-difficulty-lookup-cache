@@ -12,10 +12,12 @@ using BeatmapDifficultyLookupCache.Models;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using osu.Framework.Input;
 using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Online.API;
+using osu.Game.Online.API.Requests.Responses;
 using osu.Game.Rulesets;
 using osu.Game.Rulesets.Catch.Difficulty;
 using osu.Game.Rulesets.Difficulty;
@@ -121,7 +123,10 @@ namespace BeatmapDifficultyLookupCache
                     throw new InvalidOperationException($"Invalid ruleset: {request.RulesetId}");
             }
 
-            attributes.FromDatabaseAttributes(rawDifficultyAttributes.ToDictionary(a => (int)a.attrib_id, e => (double)e.value));
+            attributes.FromDatabaseAttributes(
+                rawDifficultyAttributes.ToDictionary(a => (int)a.attrib_id, e => (double)e.value),
+                // Empty beatmap since its values aren't serialised out.
+                new APIBeatmap());
 
             return attributes;
         }
@@ -259,29 +264,47 @@ namespace BeatmapDifficultyLookupCache
             {
                 switch (mod.Acronym)
                 {
-                    case "EZ": return LegacyMods.Easy;
+                    case "EZ":
+                        return LegacyMods.Easy;
 
-                    case "HR": return LegacyMods.HardRock;
+                    case "HR":
+                        return LegacyMods.HardRock;
 
-                    case "NC": return LegacyMods.DoubleTime;
+                    case "NC":
+                        return LegacyMods.DoubleTime;
 
-                    case "DT": return LegacyMods.DoubleTime;
+                    case "DT":
+                        return LegacyMods.DoubleTime;
 
-                    case "HT": return LegacyMods.HalfTime;
+                    case "HT":
+                        return LegacyMods.HalfTime;
 
-                    case "4K": return LegacyMods.Key4;
+                    case "4K":
+                        return LegacyMods.Key4;
 
-                    case "5K": return LegacyMods.Key5;
+                    case "5K":
+                        return LegacyMods.Key5;
 
-                    case "6K": return LegacyMods.Key6;
+                    case "6K":
+                        return LegacyMods.Key6;
 
-                    case "7K": return LegacyMods.Key7;
+                    case "7K":
+                        return LegacyMods.Key7;
 
-                    case "8K": return LegacyMods.Key8;
+                    case "8K":
+                        return LegacyMods.Key8;
 
-                    case "9K": return LegacyMods.Key9;
+                    case "9K":
+                        return LegacyMods.Key9;
 
-                    case "FL" when rulesetId == 0: return LegacyMods.Flashlight;
+                    case "FL" when rulesetId == 0:
+                        return LegacyMods.Flashlight;
+
+                    case "HD" when rulesetId == 0 && mods.Any(m => m.Acronym == "FL"):
+                        return LegacyMods.Hidden;
+
+                    case "TD" when rulesetId == 0:
+                        return LegacyMods.TouchDevice;
                 }
 
                 return 0;
