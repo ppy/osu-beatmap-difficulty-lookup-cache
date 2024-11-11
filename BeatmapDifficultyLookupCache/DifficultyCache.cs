@@ -24,6 +24,7 @@ using osu.Game.Rulesets.Mania.Difficulty;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Difficulty;
 using osu.Game.Rulesets.Taiko.Difficulty;
+using osu.Server.QueueProcessor;
 
 namespace BeatmapDifficultyLookupCache
 {
@@ -87,7 +88,7 @@ namespace BeatmapDifficultyLookupCache
 
             beatmap_difficulty_attribute[] rawDifficultyAttributes;
 
-            using (var conn = await Database.GetDatabaseConnection())
+            using (var conn = await DatabaseAccess.GetConnectionAsync())
             {
                 rawDifficultyAttributes = (await conn.QueryAsync<beatmap_difficulty_attribute>(
                     "SELECT * FROM osu_beatmap_difficulty_attribs WHERE beatmap_id = @BeatmapId AND mode = @RulesetId AND mods = @ModValue", new
@@ -142,7 +143,7 @@ namespace BeatmapDifficultyLookupCache
                     mods);
             }
 
-            using (var conn = await Database.GetDatabaseConnection())
+            using (var conn = await DatabaseAccess.GetConnectionAsync())
             {
                 return await conn.QueryFirstOrDefaultAsync<float>("SELECT diff_unified from osu.osu_beatmap_difficulty WHERE beatmap_id = @BeatmapId AND mode = @RulesetId and mods = @ModValue", new
                 {
