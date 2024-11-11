@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using BeatmapDifficultyLookupCache.Models;
 using Dapper;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
@@ -34,14 +33,12 @@ namespace BeatmapDifficultyLookupCache
         private static readonly DifficultyAttributes empty_attributes = new DifficultyAttributes(Array.Empty<Mod>(), -1);
 
         private readonly Dictionary<DifficultyRequest, Task<DifficultyAttributes>> attributesCache = new Dictionary<DifficultyRequest, Task<DifficultyAttributes>>();
-        private readonly IConfiguration config;
         private readonly ILogger logger;
 
         private readonly bool useDatabase;
 
-        public DifficultyCache(IConfiguration config, ILogger<DifficultyCache> logger)
+        public DifficultyCache(ILogger<DifficultyCache> logger)
         {
-            this.config = config;
             this.logger = logger;
 
             useDatabase = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USE_DATABASE_LOOKUPS"));
@@ -215,7 +212,7 @@ namespace BeatmapDifficultyLookupCache
         {
             logger.LogInformation("Downloading beatmap ({BeatmapId})", beatmapId);
 
-            var req = new WebRequest(string.Format(config["Beatmaps:DownloadPath"], beatmapId))
+            var req = new WebRequest(string.Format(Environment.GetEnvironmentVariable("DOWNLOAD_PATH") ?? "https://osu.ppy.sh/osu/{0}", beatmapId))
             {
                 AllowInsecureRequests = true
             };
