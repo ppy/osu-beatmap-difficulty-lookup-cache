@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using BeatmapDifficultyLookupCache.Models;
 using Dapper;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using osu.Framework.IO.Network;
 using osu.Game.Beatmaps;
@@ -24,6 +23,7 @@ using osu.Game.Rulesets.Mania.Difficulty;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Difficulty;
 using osu.Game.Rulesets.Taiko.Difficulty;
+using osu.Server.QueueProcessor;
 
 namespace BeatmapDifficultyLookupCache
 {
@@ -33,14 +33,12 @@ namespace BeatmapDifficultyLookupCache
         private static readonly DifficultyAttributes empty_attributes = new DifficultyAttributes(Array.Empty<Mod>(), -1);
 
         private readonly Dictionary<DifficultyRequest, Task<DifficultyAttributes>> attributesCache = new Dictionary<DifficultyRequest, Task<DifficultyAttributes>>();
-        private readonly IConfiguration config;
         private readonly ILogger logger;
 
         private readonly bool useDatabase;
 
-        public DifficultyCache(IConfiguration config, ILogger<DifficultyCache> logger)
+        public DifficultyCache(ILogger<DifficultyCache> logger)
         {
-            this.config = config;
             this.logger = logger;
 
             useDatabase = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("USE_DATABASE_LOOKUPS"));
@@ -87,7 +85,7 @@ namespace BeatmapDifficultyLookupCache
 
             beatmap_difficulty_attribute[] rawDifficultyAttributes;
 
-            using (var conn = await Database.GetDatabaseConnection())
+            using (var conn = await DatabaseAccess.GetConnectionAsync())
             {
                 rawDifficultyAttributes = (await conn.QueryAsync<beatmap_difficulty_attribute>(
                     "SELECT * FROM osu_beatmap_difficulty_attribs WHERE beatmap_id = @BeatmapId AND mode = @RulesetId AND mods = @ModValue", new
@@ -142,7 +140,7 @@ namespace BeatmapDifficultyLookupCache
                     mods);
             }
 
-            using (var conn = await Database.GetDatabaseConnection())
+            using (var conn = await DatabaseAccess.GetConnectionAsync())
             {
                 return await conn.QueryFirstOrDefaultAsync<float>("SELECT diff_unified from osu.osu_beatmap_difficulty WHERE beatmap_id = @BeatmapId AND mode = @RulesetId and mods = @ModValue", new
                 {
@@ -214,7 +212,7 @@ namespace BeatmapDifficultyLookupCache
         {
             logger.LogInformation("Downloading beatmap ({BeatmapId})", beatmapId);
 
-            var req = new WebRequest(string.Format(config["Beatmaps:DownloadPath"], beatmapId))
+            var req = new WebRequest(string.Format(Environment.GetEnvironmentVariable("DOWNLOAD_PATH") ?? "https://osu.ppy.sh/osu/{0}", beatmapId))
             {
                 AllowInsecureRequests = true
             };
