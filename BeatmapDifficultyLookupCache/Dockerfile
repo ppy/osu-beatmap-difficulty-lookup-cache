@@ -17,5 +17,4 @@ WORKDIR /app
 COPY --from=build-env /app/out .
 COPY docker docker
 
-# see https://github.com/dotnet/runtime/issues/66707 for issue handling signals on arm64
-ENTRYPOINT ["/app/docker/wait_term.sh", "BeatmapDifficultyLookupCache.dll"]
+ENTRYPOINT ["dotnet", "BeatmapDifficultyLookupCache.dll"]
