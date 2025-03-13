@@ -19,6 +19,6 @@ namespace BeatmapDifficultyLookupCache.Controllers
         }
 
         [HttpPost]
-        public Task<DifficultyAttributes> Post([FromBody] DifficultyRequest request) => cache.GetAttributes(request);
+        public Task<IDifficultyAttributes> Post([FromBody] DifficultyRequest request) => cache.GetAttributes(request);
     }
 }
