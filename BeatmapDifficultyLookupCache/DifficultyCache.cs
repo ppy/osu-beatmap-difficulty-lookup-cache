@@ -20,7 +20,6 @@ using osu.Game.Rulesets;
 using osu.Game.Rulesets.Catch.Difficulty;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Mania.Difficulty;
-using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Difficulty;
 using osu.Game.Rulesets.Taiko.Difficulty;
 using osu.Server.QueueProcessor;
@@ -30,9 +29,9 @@ namespace BeatmapDifficultyLookupCache
     public class DifficultyCache
     {
         private static readonly List<Ruleset> available_rulesets = getRulesets();
-        private static readonly DifficultyAttributes empty_attributes = new DifficultyAttributes(Array.Empty<Mod>(), -1);
+        private static readonly IDifficultyAttributes empty_attributes = new EmptyDifficultyAttributes { StarRating = -1 };
 
-        private readonly Dictionary<DifficultyRequest, Task<DifficultyAttributes>> attributesCache = new Dictionary<DifficultyRequest, Task<DifficultyAttributes>>();
+        private readonly Dictionary<DifficultyRequest, Task<IDifficultyAttributes>> attributesCache = new Dictionary<DifficultyRequest, Task<IDifficultyAttributes>>();
         private readonly ILogger logger;
 
         private readonly bool useDatabase;
@@ -57,7 +56,7 @@ namespace BeatmapDifficultyLookupCache
             return (await computeAttributes(request)).StarRating;
         }
 
-        public async Task<DifficultyAttributes> GetAttributes(DifficultyRequest request)
+        public async Task<IDifficultyAttributes> GetAttributes(DifficultyRequest request)
         {
             if (request.BeatmapId == 0)
                 return empty_attributes;
@@ -72,14 +71,14 @@ namespace BeatmapDifficultyLookupCache
                 {
                     // Databased attribute retrieval can fail if the database doesn't contain all attributes for a given beatmap.
                     // If such a case occurs, fall back to providing just the star rating rather than outputting exceptions.
-                    return new DifficultyAttributes { StarRating = await GetDifficultyRating(request) };
+                    return new EmptyDifficultyAttributes { StarRating = await GetDifficultyRating(request) };
                 }
             }
 
             return await computeAttributes(request);
         }
 
-        private async Task<DifficultyAttributes> getDatabasedAttributes(DifficultyRequest request)
+        private async Task<IDifficultyAttributes> getDatabasedAttributes(DifficultyRequest request)
         {
             int mods = getModBitwise(request.RulesetId, request.GetMods());
 
@@ -96,7 +95,7 @@ namespace BeatmapDifficultyLookupCache
                     })).ToArray();
             }
 
-            DifficultyAttributes attributes;
+            IDifficultyAttributes attributes;
 
             switch (request.RulesetId)
             {
@@ -151,9 +150,9 @@ namespace BeatmapDifficultyLookupCache
             }
         }
 
-        private async Task<DifficultyAttributes> computeAttributes(DifficultyRequest request)
+        private async Task<IDifficultyAttributes> computeAttributes(DifficultyRequest request)
         {
-            Task<DifficultyAttributes>? task;
+            Task<IDifficultyAttributes>? task;
 
             lock (attributesCache)
             {
@@ -176,9 +175,6 @@ namespace BeatmapDifficultyLookupCache
 
                             var difficultyCalculator = ruleset.CreateDifficultyCalculator(beatmap);
                             var attributes = difficultyCalculator.Calculate(mods);
-
-                            // Trim a few members which we don't consume and only take up RAM.
-                            attributes.Mods = Array.Empty<Mod>();
 
                             return attributes;
                         }
