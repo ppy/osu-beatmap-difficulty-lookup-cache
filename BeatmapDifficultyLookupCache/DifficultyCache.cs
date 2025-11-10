@@ -297,7 +297,7 @@ namespace BeatmapDifficultyLookupCache
                     case "FL" when rulesetId == 0:
                         return LegacyMods.Flashlight;
 
-                    case "HD" when rulesetId == 0 && mods.Any(m => m.Acronym == "FL"):
+                    case "HD" when rulesetId == 0:
                         return LegacyMods.Hidden;
 
                     case "TD" when rulesetId == 0:
