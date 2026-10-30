@@ -23,6 +23,7 @@ using osu.Game.Rulesets.Mania.Difficulty;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Osu.Difficulty;
 using osu.Game.Rulesets.Taiko.Difficulty;
+using osu.Game.Scoring;
 using osu.Server.QueueProcessor;
 
 namespace BeatmapDifficultyLookupCache
